@@ -1,0 +1,30 @@
+{
+  "name": "solidity",
+  "version": "1.0.0",
+  "description": "Contract in solidity language",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alejandroverita/first-solidity-smart-contract.git"
+  },
+  "keywords": [
+    "sol",
+    "solidity",
+    "smart-contracts",
+    "blockchain"
+  ],
+  "author": "Alejandro Vera",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alejandroverita/first-solidity-smart-contract/issues"
+  },
+  "homepage": "https://github.com/alejandroverita/first-solidity-smart-contract#readme",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^2.0.0",
+    "dotenv": "^10.0.0",
+    "truffle-hdwallet-provider": "^1.0.17"
+  }
+}
