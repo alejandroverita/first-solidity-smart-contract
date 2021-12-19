@@ -69,6 +69,44 @@ Por defecto las variables de estado se almacenan en el storage y los parámetros
 ### Modifier
 
  Require: 1er parametro la condicion que va a validar, 2do param mensaje cuando la validacion falla
+
+ Los modificadores son funciones especiales por el usuario y que se añaden a otra función para envolver su funcionamiento
+
+	modifier <name>(<type> <parameter>..., [,...]) {
+	  <content>
+	}
+
+
+El guión bajo
+El guión bajo (también conocido como placeholder), es una instrucción especial del modificador que indica dónde se va a ejecutar el código de la función inicial que envuelve al modifier.
+
+Por ejemplo
+
+	## Primero valida y luego ejecuta
+	modifier isOwner() {
+	  if(<condicion>) revert()
+	  _;
+	}
+
+	## Primero ejecuta y luego valida
+	modifier isOwner() {
+	   _;
+	  if(<condicion>) revert()
+	}
+
+	## Ejecuta, valida y vuelve a ejecutar
+	modifier isOwner() {
+	   _;
+	  if(<condicion>) revert()
+	   _;
+	}
+
+La función revert() se utiliza para arrojar una excepción en nuestro smart contract y revertir la función que la llama. Se puede agregar un mensaje como parámetro describiendo el error
+
+	modifier EsOwner() {
+		if (msg.sender != owner) revert("Solo el dueño del contrato puede modificarlo.");
+		_;
+	}
  
 
 ### Eventos
@@ -138,4 +176,186 @@ countries['Laura']= 'Ecuador';
 countries['Felipe'] // 'Colombia';
 countries['Laura'] // 'Ecuador';
 ```
+
+### Recibir Ether desde un contrato
+
+- Receive: Recibe el saldo de trasferencias sin parámetros.
+- FallBack: Recibe información adjunta a la trasferencia por medio de los parámetros.
+- Función Payable: Se especifica el tipo payable a una función que puede recibir trasferencias.
+
+### Manejo de dependencias y librerias
+
+	// SPDX-License-Identifier: GPL-3.0
+
+	pragma solidity >=0.7.0 <0.9.0;
+
+	import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+	contract Importacion {
+
+	  function sumarNumeros(uint numero1, uint numero2) public pure returns (uint) {
+		return SafeMath.add(numero1,numero2);
+	  }
+
+	}
+
+### Herencia
+>“No hay que reinvetar la rueda”
+
+Utilizamos la Herencia para reutilizar codigo en nuevos contratos. Solidity no es POO, pero se comporta similar. **Solidity es orientado a contratos.** Identificaremos con la sentencia ***is***. Si un contrato tiene un constructor con parametros, debemos indicar que valores debe tomar ese constructor para poder derivarse.
+
+Entonces, se busca generar una relacion entre contratos para reutilizar el codigo mediante la Herencia. Por lo que la capacidad de agregar/modificar una funcion ya escrita en el contrato anterior nos sera de mucha utilidad.
+
+Las funciones virtuales son funciones definidas para que se puedan reescrbir por las funciones override. Para esto debemos establecer una relacion de Herencia. Si una funcion virtual no define implementacion, el contrato se convierte en un contrato abstracto. Tambien hay contratos abstractos que usamos como moldes vacios para usar en futuros contratos.
+
+Las interfaces no van a tener codigo. su funcion es indicarnos un comportamiento que queremos que tenga un contrato. Solo tiene declaraciones (definiciones de funciones) sin codigo.
+
+**Herencia.sol** 📕📘📗
+
+	// SPDX-Licence-Identifier: UNLICENSED
+
+	pragma solidity >=0.7.0 < 0.9.0;
+
+	import "./Interface.sol";
+	import "./Modificadores.sol";
+
+	contract Herencia is Suma, Modificadores {
+
+		constructor(string memory nombreNuevo) Modificadores(nombreNuevo) {
+
+		}
+
+		function sumar(uint numero1, uint numero2) public override EsOwner() view returns(uint) {
+			return numero1 + numero2;
+		}
+	}
+
+Es buena practica traer todo el encabezado de la funcion de “Interface”, por lo que es recomendable copiar y pegar “function sumar(uint numero1, uint numero2)”
+
+**Interface.sol** 📘
+
+	// SPDX-Licence-Identifier: UNLICENSED
+
+	pragma solidity >=0.7.0 < 0.9.0;
+
+	interface Suma {
+
+		function sumar(uint numero1, uint numero2) external returns (uint);
+	}
+
+
+**Modificadores.sol** 📗
+
+	// SPDX-Licence-Identifier: UNLICENSED
+
+	pragma solidity >=0.4.0 < 0.9.0;
+
+	contract Modificadores {
+
+
+		address private owner;
+		string private nombreOwner;
+
+		constructor(string memory nombre {
+			owner = msg.sender;
+			nombreOwner = nombre;
+		}
+
+		function Suma(uint numero1, uint numero2) public view EsOwner() returns (uint) {
+			return numero1 + numero2;
+		}
+
+		modifier EsOwner() {
+			if (msg.sender != owner) revert();
+			_;
+		}
+	}
+
+### Polimorfismo
+
+Una convencion en las ´interfaces´ es llevar una **i** delante del nombre. 
+
+Interfaces solo definen encabezados pero no pueden tener una implementacion en la red. No podemos hacer el `deploy` pero si podemos usar un contrato que lo implemente. 
+
+Polimorfismo
+
+
+```
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.7.0 <0.9.0;
+
+import "./Interface.sol";
+
+contract Polimorfismo {
+    
+    function sumarDesdeContrato(uint numero1, uint numero2, address direccionContrato)
+        public returns(uint) {  
+            Suma interfaceSuma = Suma(direccionContrato);
+            return interfaceSuma.sumar(numero1,numero2);
+    } 
+    
+}
+```
+
+ImplementacionSuma.sol
+
+
+```
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.7.0 <0.9.0;
+
+import "./Interface.sol";
+
+contract ImplementacionSuma is Suma {
+    
+    function sumar(uint numero1, uint numero2) public override pure returns (uint) {
+        return numero1 + numero2;
+    }
+    
+}
+```
+
+Interface.sol
+
+
+
+```
+// SPDX-License-Identifier: GPL-3.0
+
+pragma solidity >=0.7.0 <0.9.0;
+
+interface Suma {
+    
+    function sumar(uint numero1, uint numero2) external returns (uint);
+    
+}
+```
+
+Con el polimorfismo pudimos usar la suma que esta en otro contrato porque no llamamos directamente a la implementación de Suma sino que hicimos la llamada a la Interface, a pesar de que las interfaces no pueden ser implementadas en la red, pero con Polimorfismo pudimos hacerlo.
+
+### Tokens
+
+**ERC-20**
+- Representa a los tokens fungibles
+- Solo define su Interface
+- Existen mas estándares pero mantienen compatibilidad con el ERC-20
+
+[ERC-20 OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol)
+
+**ERC-721**
+- Representa a los tokens no fungibles. NFT
+- Solo define su Interface
+- Tienen un identificador único conocido como tokenId.
+
+[ERC-721 OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol)**ABI**
+- Application Binary Interface
+- Es una interface que nos detalla que definiciones tiene el contrato y sus funciones, sin conocer su implementacion.
+- Nos permite saber la forma que tiene un contrato para poder interactuar con las funciones.
+- ABI se presenta en formato JSON
+
+Herramientas que gestionan el ABI
+- [HardHat](https://hardhat.org/)
+- [Truffle](http://trufflesuite.com/truffle/)
 
